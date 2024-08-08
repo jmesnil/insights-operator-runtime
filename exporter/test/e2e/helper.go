@@ -113,14 +113,25 @@ func podsReady(client klient.Client, selector string) apimachinerywait.Condition
 		if err := client.Resources().List(ctx, &pods, watchOptions); err != nil {
 			return false, err
 		}
+
+		if len(pods.Items) == 0 {
+			return false, nil
+		}
+
 		for _, pod := range pods.Items {
+			podReady := false
 			for _, cond := range pod.Status.Conditions {
 				if cond.Type == corev1.PodReady && cond.Status == corev1.ConditionTrue {
-					done = true
+					podReady = true
+					break
 				}
 			}
+			if !podReady {
+				return false, nil
+			}
 		}
-		return
+
+		return true, nil
 	}
 }
 
